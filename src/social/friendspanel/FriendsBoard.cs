@@ -156,9 +156,15 @@ public static class FriendsBoard
         _panel.style.position = Position.Absolute;
         _panel.style.right = 24;
         // Vertically centered: anchor the top at 50% then shift up by half the
-        // panel's own height (matches the probe panel's placement).
+        // panel's own height. The percentage translate is only a first-frame
+        // seed — UI Toolkit doesn't reliably re-resolve a percent translate when
+        // the panel's content height changes, so after Refresh() rebuilds the
+        // cards the board would drift off-center. OnPanelGeometryChanged converts
+        // it to a pixel offset that's recomputed on every layout change, which is
+        // exactly when the player list is updated.
         _panel.style.top = Length.Percent(50);
         _panel.style.translate = new Translate(0, Length.Percent(-50));
+        _panel.RegisterCallback<GeometryChangedEvent>(OnPanelGeometryChanged);
         _panel.style.width = PanelWidth;
         _panel.style.maxHeight = Length.Percent(72);
         _panel.style.paddingTop = 12;
@@ -238,7 +244,22 @@ public static class FriendsBoard
 
         _cards = new ScrollView(ScrollViewMode.Vertical);
         _cards.style.flexGrow = 1;
+        // min-height:0 lets flexbox shrink the ScrollView below its content
+        // height. Without it a flex child defaults to min-height:auto, so the
+        // ScrollView expands to fit every card; the panel then clips them at its
+        // maxHeight (72%) with no scrollbar. With it, the list scrolls internally.
+        _cards.style.minHeight = 0;
         _panel.Add(_cards);
+    }
+
+    // Keep the panel vertically centered as its height changes. Fired whenever
+    // the layout resolves — including after Refresh() adds/removes cards — so the
+    // board re-centers instead of drifting when the player list updates.
+    private static void OnPanelGeometryChanged(GeometryChangedEvent evt)
+    {
+        float height = _panel.resolvedStyle.height;
+        if (height <= 0f) return;
+        _panel.style.translate = new Translate(0, -height / 2f);
     }
 
     // Manual refresh: force every visible server to re-ping (ignore the TTL)

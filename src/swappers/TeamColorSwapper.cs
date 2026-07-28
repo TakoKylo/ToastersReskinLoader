@@ -199,22 +199,25 @@ public static class TeamColorSwapper
                 if (profile != null && (core.Settings.Current?.localPlayerMinimapIconEnabled ?? false) && playerBody.Player.IsLocalPlayer)
                     return;
 
-                Color? c = GetOverrideColor(playerBody.Player.Team);
-                if (c == null) return;
-
                 var map = (Dictionary<PlayerBody, (VisualElement Root, VisualElement Body)>)_mapField?.GetValue(__instance);
                 if (map == null || !map.ContainsKey(playerBody)) return;
 
                 // B1117: tint the cached Body child, which is the actual arrow icon.
                 VisualElement bodyEl = map[playerBody].Body;
-                var color = c.Value;
-                if (bodyEl != null)
+                if (bodyEl == null) return;
+
+                // Blue/Red (override on) get a custom tint; every other case must
+                // actively clear our inline tint so vanilla's team class owns the
+                // icon again, otherwise a player who left Red/Blue keeps the stale
+                // color (inline beats the USS class). Mirrors RefreshAll.
+                Color? c = GetOverrideColor(playerBody.Player.Team);
+                StyleColor target = c != null
+                    ? new StyleColor(c.Value)
+                    : new StyleColor(StyleKeyword.Null);
+                bodyEl.schedule.Execute(() =>
                 {
-                    bodyEl.schedule.Execute(() =>
-                    {
-                        bodyEl.style.unityBackgroundImageTintColor = color;
-                    });
-                }
+                    bodyEl.style.unityBackgroundImageTintColor = target;
+                });
             }
             catch (Exception e)
             {
@@ -238,16 +241,20 @@ public static class TeamColorSwapper
             {
                 if (!stick || !stick.Player) return;
 
-                Color? c = GetOverrideColor(stick.Player.Team);
-                if (c == null) return;
-
                 var map = (Dictionary<Stick, VisualElement>)_stickMapField?.GetValue(__instance);
                 if (map == null || !map.ContainsKey(stick)) return;
 
                 VisualElement stickEl = map[stick];
-                var color = c.Value;
-                if (stickEl != null)
-                    stickEl.schedule.Execute(() => stickEl.style.backgroundColor = color);
+                if (stickEl == null) return;
+
+                // Custom color for Blue/Red, else clear our inline background so
+                // vanilla's .minimapStick team class takes back over. Mirrors
+                // RefreshAll's null handling.
+                Color? c = GetOverrideColor(stick.Player.Team);
+                StyleColor target = c != null
+                    ? new StyleColor(c.Value)
+                    : new StyleColor(StyleKeyword.Null);
+                stickEl.schedule.Execute(() => stickEl.style.backgroundColor = target);
             }
             catch (Exception e)
             {
@@ -271,8 +278,6 @@ public static class TeamColorSwapper
             try
             {
                 if (!player) return;
-                Color? c = GetOverrideColor(player.Team);
-                if (c == null) return;
 
                 var map = (Dictionary<Player, VisualElement>)_mapField?.GetValue(__instance);
                 if (map == null || !map.ContainsKey(player)) return;
@@ -280,10 +285,20 @@ public static class TeamColorSwapper
                 VisualElement playerEl = map[player].Q("Player");
                 if (playerEl == null) return;
 
-                var color = c.Value;
+                // Blue/Red (with the per-team override on) get a custom inline
+                // background; every other case — Spectator/None, or the override
+                // off — must actively clear our inline color so vanilla's USS team
+                // class (.teamNone/.teamSpectator) owns the row again. Returning
+                // early on the null path leaves a player who left Red/Blue for
+                // Spectator stuck with the stale custom color, because an inline
+                // style always wins over the USS class. Mirrors RefreshAll.
+                Color? c = GetOverrideColor(player.Team);
+                StyleColor target = c != null
+                    ? new StyleColor(c.Value)
+                    : new StyleColor(StyleKeyword.Null);
                 playerEl.schedule.Execute(() =>
                 {
-                    playerEl.style.backgroundColor = color;
+                    playerEl.style.backgroundColor = target;
                 });
             }
             catch (Exception e)

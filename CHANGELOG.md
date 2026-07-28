@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.4.2
+
+### Fixed
+- **The Deltapoint sight is visible again.** The stick-mounted Deltapoint has
+  never actually appeared in game — its model was missing from the bundled hat
+  assets, so the mod silently skipped it every time. The model is now included
+  and the sight attaches to the stick as intended.
+
+## 2.4.1
+
+### Fixed
+- **Custom team colors no longer stick after leaving a team.** When custom team
+  colors were enabled, a player who switched from Red/Blue out to Spectator/None
+  kept their old team color on the tab scoreboard row (and the same could happen
+  to their minimap icon and stick). The custom color is now cleared on those
+  transitions so the element returns to its normal spectator styling.
+
 ## 2.4.0
 
 ### Added
