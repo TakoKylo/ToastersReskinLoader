@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.4.3
+
+### Fixed
+- **Workshop reskin packs now load on macOS.** The mod worked out where the game
+  was installed in a way that only held on Windows, so on Mac it looked for
+  subscribed workshop packs inside the game's app bundle and found nothing —
+  no workshop pack has ever loaded there. It now locates the install correctly
+  on both platforms.
+- **Mac settings, profiles and presets are saved next to the game** instead of
+  inside the app bundle, where Steam could wipe them when it verified or updated
+  the game. Mac users upgrading from an earlier version will start from default
+  settings once; the old files can be recovered from inside the bundle at
+  `Puck.app/Contents/Resources/reskinprofiles` and `.../config`.
+
 ## 2.4.2
 
 ### Fixed

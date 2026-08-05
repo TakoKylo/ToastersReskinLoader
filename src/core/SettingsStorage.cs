@@ -21,7 +21,7 @@ namespace ToasterReskinLoader.core;
 internal static class SettingsStorage
 {
     private static readonly string Dir =
-        Path.Combine(Path.GetFullPath(Path.Combine(Application.dataPath, "..")), "config");
+        Path.Combine(PathManager.GameRootFolder, "config");
 
     internal static readonly string QoLPath         = Path.Combine(Dir, "ToastersReskinLoaderQoL.json");
     internal static readonly string ServerPrefsPath = Path.Combine(Dir, "ToastersReskinLoaderServerPrefs.json");

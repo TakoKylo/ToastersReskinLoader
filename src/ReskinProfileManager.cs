@@ -19,7 +19,7 @@ public static class ReskinProfileManager
     // TODO make this inside of a dictionary or profile setting or something
     public static Profile currentProfile { get; private set; } = new Profile();
 
-    private static string ProfilePath = Path.Combine(Path.GetFullPath(Path.Combine(Application.dataPath, "..")), "reskinprofiles", "ReskinProfile.json");
+    private static string ProfilePath = Path.Combine(PathManager.GameRootFolder, "reskinprofiles", "ReskinProfile.json");
 
     public static void SetSelectedReskinInCurrentProfile(ReskinRegistry.ReskinEntry reskinEntry, string type, string slot)
     {
@@ -233,7 +233,7 @@ public static class ReskinProfileManager
 
     public static void LoadProfile()
     {
-        string profilesFolder = Path.Combine(Path.GetFullPath(Path.Combine(Application.dataPath, "..")), "reskinprofiles");
+        string profilesFolder = Path.Combine(PathManager.GameRootFolder, "reskinprofiles");
         if (!Directory.Exists(profilesFolder))
         {
             Plugin.LogError($"Local reskin profiles folder not found: {profilesFolder}, creating it...");
