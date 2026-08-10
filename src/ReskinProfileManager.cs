@@ -330,7 +330,12 @@ public static class ReskinProfileManager
         }
     }
 
-    public static void SaveProfile()
+    /// <summary>
+    /// Writes the current profile to disk. Returns false if the write failed — callers that
+    /// surface save state to the user need to know, since the failure is otherwise silent
+    /// (it only reaches the log).
+    /// </summary>
+    public static bool SaveProfile()
     {
         try
         {
@@ -338,10 +343,14 @@ public static class ReskinProfileManager
             string json = JsonConvert.SerializeObject(currentProfile, ProfileSerializerSettings);
             File.WriteAllText(ProfilePath, json);
             Plugin.LogDebug($"Reskin profile saved to: {ProfilePath}");
+            core.SaveStatus.ReportSaved();
+            return true;
         }
         catch (Exception ex)
         {
             Plugin.LogError($"Failed to save reskin profile: {ex.Message}");
+            core.SaveStatus.ReportFailed();
+            return false;
         }
     }
 

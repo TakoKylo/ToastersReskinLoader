@@ -54,9 +54,9 @@ internal static class SettingsStorage
         }
     }
 
-    public static void Save(SettingsConfig cfg)
+    public static bool Save(SettingsConfig cfg)
     {
-        if (cfg == null) return;
+        if (cfg == null) return false;
         try
         {
             Directory.CreateDirectory(Dir);
@@ -79,8 +79,15 @@ internal static class SettingsStorage
                     : new Dictionary<string, string>(),
             };
             File.WriteAllText(ServerPrefsPath, JsonConvert.SerializeObject(prefs, JsonSettings));
+            SaveStatus.ReportSaved();
+            return true;
         }
-        catch (Exception e) { Plugin.LogError($"[QoL] SettingsStorage.Save failed: {e.Message}"); }
+        catch (Exception e)
+        {
+            Plugin.LogError($"[QoL] SettingsStorage.Save failed: {e.Message}");
+            SaveStatus.ReportFailed();
+            return false;
+        }
     }
 
     private static T ReadJson<T>(string path) where T : class
