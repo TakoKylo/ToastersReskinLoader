@@ -27,6 +27,10 @@
 
   <ItemGroup>
     <PackageReference Include="SharpConfig" Version="3.2.9.1" />
+    <!-- net4.8 targeting pack as a NuGet package so the project also builds on
+         macOS/Linux, where the SDK has no .NET Framework reference assemblies
+         installed. No effect on Windows builds. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
   </ItemGroup>
 
   <Target Name="PreBuildMessage" BeforeTargets="Build">
@@ -47,11 +51,20 @@
     <PluginAsset Include="puck_normal.png" />
   </ItemGroup>
 
-  <!-- Streamline development and move the built .dll (plus asset bundles) to the plugins folder(s) after building -->
+  <!-- Streamline development and move the built .dll (plus asset bundles) to the plugins folder(s) after building.
+       The install layout differs per OS: on macOS Steam puts the game under
+       ~/Library/Application Support/Steam and the Plugins folder sits next to Puck.app,
+       not inside the bundle. Note that Puck's ModManager resolves Plugins relative to the
+       process working directory, so a sideloaded build is only picked up when the game is
+       launched from the game folder (Terminal), not from Steam/Finder. -->
   <Target Name="PostBuildMoveDll" AfterTargets="Build">
-    <ItemGroup>
+    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
       <PluginTargetDir Include="C:\Program Files (x86)\Steam\steamapps\common\Puck\Plugins\ToasterReskinLoader" />
       <PluginTargetDir Include="C:\PuckOfficialDev\puck\Builds\Windows Client\Plugins\ToasterReskinLoader" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(OS)' != 'Windows_NT' AND '$(HOME)' != ''">
+      <PluginTargetDir Include="$(HOME)/Library/Application Support/Steam/steamapps/common/Puck/Plugins/ToasterReskinLoader" />
     </ItemGroup>
 
     <MakeDir Directories="@(PluginTargetDir)" />
