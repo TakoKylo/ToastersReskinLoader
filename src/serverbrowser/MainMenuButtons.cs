@@ -589,6 +589,11 @@ internal static class MainMenuButtons
             MatchmakingPanelOverlay.SetIsVisible(true);
             MatchmakingPanelOverlay.SetVisible(true);
             MatchmakingPanelOverlay.SetConnectButton(false);
+            // Vanilla's own repaint is suppressed while we own the panel, so
+            // nothing else will hide B1231's START MATCHMAKING button — and it
+            // sits on the root view we just forced visible, not inside the
+            // container, so showing our overlay would otherwise reveal it.
+            MatchmakingPanelOverlay.SetStartMatchmakingButton(false);
             // X button visible so the user can bail out of a stuck or
             // slow quick-join — close click is routed back here via
             // Event_OnMatchmakingMatchingClickClose → OnMatchmakingClose.
@@ -634,6 +639,14 @@ internal static class MainMenuButtons
             MatchmakingPanelOverlay.SetConnectButton(false);
             MatchmakingPanelOverlay.SetCloseButton(false);
             MatchmakingPanelOverlay.SetTimeVisible(false);
+            // Blank the sibling START MATCHMAKING button and drop the root view
+            // explicitly rather than leaning on the RepaintVanilla below to do
+            // it. That repaint runs through the patched UpdateMatching, and on
+            // this path QuickJoinInFlight is still set (it clears as the
+            // background task unwinds) while vanilla matchmaking is not active
+            // — so IsClaimedByMod is true and our own prefix skips it.
+            MatchmakingPanelOverlay.SetStartMatchmakingButton(false);
+            MatchmakingPanelOverlay.ReleaseRootView();
             // Hand the panel back rather than just leaving it hidden. If
             // matchmaking became active while we held it, UpdateMatching has
             // already fired for that transition and nothing re-runs it on its

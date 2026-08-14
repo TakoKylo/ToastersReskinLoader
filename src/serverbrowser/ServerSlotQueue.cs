@@ -629,6 +629,12 @@ internal static class ServerSlotQueue
             MatchmakingPanelOverlay.SetVisible(true);
             MatchmakingPanelOverlay.SetConnectButton(false);
             MatchmakingPanelOverlay.SetCloseButton(true);
+            // B1231's START MATCHMAKING button lives on the root view we just
+            // re-asserted, not inside the panel, and vanilla's repaint (the
+            // only thing that hides it) is suppressed while we hold the panel.
+            // Re-hidden every tick alongside the rest, since a scene change can
+            // rebuild the DOM and bring it back.
+            MatchmakingPanelOverlay.SetStartMatchmakingButton(false);
             EnsureLabelInjections();
         }
         catch (Exception e) { Debug.LogWarning("[QoL] ServerSlotQueue EnsurePanelShown failed: " + e.Message); }
@@ -731,6 +737,14 @@ internal static class ServerSlotQueue
             MatchmakingPanelOverlay.SetCloseButton(false);
             MatchmakingPanelOverlay.SetConnectButton(false);
             MatchmakingPanelOverlay.SetTimeVisible(false);
+            // Hiding the container no longer empties the view — the B1231 START
+            // MATCHMAKING button is a sibling of it — so blank that too and drop
+            // the root view EnsurePanelShown forced open. Without this the button
+            // is left floating over gameplay for the rest of the session, which
+            // is the same leak the queue used to have with the reparented
+            // PhaseLabel.
+            MatchmakingPanelOverlay.SetStartMatchmakingButton(false);
+            MatchmakingPanelOverlay.ReleaseRootView();
             RestoreVanillaPanelDom();
         }
         catch (Exception e) { Debug.LogWarning("[QoL] ServerSlotQueue HideQueuePanel failed: " + e.Message); }

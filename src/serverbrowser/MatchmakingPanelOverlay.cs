@@ -48,6 +48,17 @@ internal static class MatchmakingPanelOverlay
     private static readonly MethodInfo _setCloseVis   = Type?.GetMethod("SetMatchingCloseButtonVisibility");
     private static readonly MethodInfo _setTimeVis    = Type?.GetMethod("SetMatchingTimeVisibility");
     private static readonly MethodInfo _setTimeText   = Type?.GetMethod("SetMatchingTimeText");
+    // B1231 added a START MATCHMAKING button to the matchmaking view. Unlike
+    // every other element here it is queried off the ROOT view rather than the
+    // "Matching" container — UIMatchmaking.Initialize does
+    // View.Q("StartMatchmakingButton") where PhaseLabel / TimeLabel /
+    // ConnectButton / CloseIconButtonContainer all come off `matching`. It is
+    // therefore a *sibling* of the panel, and SetVisible(false) does not hide
+    // it; it has its own display toggle, and the only things that ever drive
+    // that are UIMatchmakingController.Start and .UpdateMatching — the latter
+    // being exactly what Patch_UpdateMatching suppresses while an overlay owns
+    // the panel. Null on builds predating the button, where the setter no-ops.
+    private static readonly MethodInfo _setStartVis   = Type?.GetMethod("SetMatchingStartMatchmakingButtonVisibility");
     private static readonly PropertyInfo _isVisible   = Type?.GetProperty("IsVisible");
     private static readonly FieldInfo _matchingField  = Type?.GetField("matching",
         BindingFlags.Instance | BindingFlags.NonPublic);
@@ -71,6 +82,26 @@ internal static class MatchmakingPanelOverlay
     internal static void SetCloseButton(bool v)   { var p = Panel; if (p == null) return; try { _setCloseVis?.Invoke(p, new object[] { v }); } catch { } }
     internal static void SetTimeVisible(bool v)   { var p = Panel; if (p == null) return; try { _setTimeVis?.Invoke(p, new object[] { v }); } catch { } }
     internal static void SetTimeText(int seconds) { var p = Panel; if (p == null) return; try { _setTimeText?.Invoke(p, new object[] { seconds }); } catch { } }
+    internal static void SetStartMatchmakingButton(bool v) { var p = Panel; if (p == null) return; try { _setStartVis?.Invoke(p, new object[] { v }); } catch { } }
+
+    // Symmetric undo for the SetIsVisible(true) both overlays use to force the
+    // root view open (the game's view manager flips it off on scene changes,
+    // so the overlays re-assert it every tick to float across scenes).
+    //
+    // Hiding only the inner "Matching" container is no longer enough to leave
+    // nothing on screen: since B1231 the root view also holds the sibling
+    // START MATCHMAKING button, so a released panel that left the root visible
+    // would strand that button over gameplay for the rest of the session.
+    //
+    // Skipped while vanilla matchmaking is active, because UpdateMatching only
+    // ever paints the inner container and its buttons — it never touches root
+    // visibility — so hiding the root here would blank a live ranked queue that
+    // nothing would restore.
+    internal static void ReleaseRootView()
+    {
+        if (IsVanillaMatchmakingActive()) return;
+        SetIsVisible(false);
+    }
 
     // The inner "matching" VisualElement (the row that holds PhaseLabel),
     // or null. Used by the slot-queue's label-injection.
