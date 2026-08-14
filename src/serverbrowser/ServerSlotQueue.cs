@@ -737,15 +737,22 @@ internal static class ServerSlotQueue
             MatchmakingPanelOverlay.SetCloseButton(false);
             MatchmakingPanelOverlay.SetConnectButton(false);
             MatchmakingPanelOverlay.SetTimeVisible(false);
-            // Hiding the container no longer empties the view — the B1231 START
-            // MATCHMAKING button is a sibling of it — so blank that too and drop
-            // the root view EnsurePanelShown forced open. Without this the button
-            // is left floating over gameplay for the rest of the session, which
-            // is the same leak the queue used to have with the reparented
-            // PhaseLabel.
-            MatchmakingPanelOverlay.SetStartMatchmakingButton(false);
-            MatchmakingPanelOverlay.ReleaseRootView();
             RestoreVanillaPanelDom();
+            // Hand the panel back instead of leaving our blanked state on it.
+            // CancelInternal nulls _cts before calling us, so IsActive is already
+            // false and this repaint is not suppressed.
+            //
+            // Required since B1231, not just tidy: the START MATCHMAKING button
+            // is a sibling of the container we just hid, and vanilla's repaint is
+            // the only thing that shows it. Leaving the panel blanked stranded
+            // the user with no way to start matchmaking after a queue — the
+            // whole flow now begins from a button inside this view, where it used
+            // to start from UIPlay's own 3v3/5v5 buttons.
+            //
+            // Deliberately NOT blanking the start button here: if the repaint
+            // fails, an unhidden button over gameplay is cosmetic, whereas a
+            // hidden one means matchmaking cannot be started at all.
+            MatchmakingPanelOverlay.RepaintVanilla();
         }
         catch (Exception e) { Debug.LogWarning("[QoL] ServerSlotQueue HideQueuePanel failed: " + e.Message); }
     }

@@ -639,19 +639,17 @@ internal static class MainMenuButtons
             MatchmakingPanelOverlay.SetConnectButton(false);
             MatchmakingPanelOverlay.SetCloseButton(false);
             MatchmakingPanelOverlay.SetTimeVisible(false);
-            // Blank the sibling START MATCHMAKING button and drop the root view
-            // explicitly rather than leaning on the RepaintVanilla below to do
-            // it. That repaint runs through the patched UpdateMatching, and on
-            // this path QuickJoinInFlight is still set (it clears as the
-            // background task unwinds) while vanilla matchmaking is not active
-            // — so IsClaimedByMod is true and our own prefix skips it.
-            MatchmakingPanelOverlay.SetStartMatchmakingButton(false);
-            MatchmakingPanelOverlay.ReleaseRootView();
             // Hand the panel back rather than just leaving it hidden. If
             // matchmaking became active while we held it, UpdateMatching has
             // already fired for that transition and nothing re-runs it on its
             // own — without this poke the ranked "MATCH READY!" Connect button
             // would stay invisible until the match expired.
+            //
+            // This reaches vanilla even though QuickJoinInFlight is still set on
+            // this path: RepaintVanilla exempts itself from Patch_UpdateMatching.
+            // Since B1231 that matters for more than the Connect button — the
+            // repaint is also what restores the START MATCHMAKING button, so
+            // without it the user is left unable to queue at all.
             MatchmakingPanelOverlay.RepaintVanilla();
         }
         catch { }

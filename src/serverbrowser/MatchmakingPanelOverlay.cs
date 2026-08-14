@@ -84,24 +84,14 @@ internal static class MatchmakingPanelOverlay
     internal static void SetTimeText(int seconds) { var p = Panel; if (p == null) return; try { _setTimeText?.Invoke(p, new object[] { seconds }); } catch { } }
     internal static void SetStartMatchmakingButton(bool v) { var p = Panel; if (p == null) return; try { _setStartVis?.Invoke(p, new object[] { v }); } catch { } }
 
-    // Symmetric undo for the SetIsVisible(true) both overlays use to force the
-    // root view open (the game's view manager flips it off on scene changes,
-    // so the overlays re-assert it every tick to float across scenes).
-    //
-    // Hiding only the inner "Matching" container is no longer enough to leave
-    // nothing on screen: since B1231 the root view also holds the sibling
-    // START MATCHMAKING button, so a released panel that left the root visible
-    // would strand that button over gameplay for the rest of the session.
-    //
-    // Skipped while vanilla matchmaking is active, because UpdateMatching only
-    // ever paints the inner container and its buttons — it never touches root
-    // visibility — so hiding the root here would blank a live ranked queue that
-    // nothing would restore.
-    internal static void ReleaseRootView()
-    {
-        if (IsVanillaMatchmakingActive()) return;
-        SetIsVisible(false);
-    }
+    // Set for the duration of a RepaintVanilla so Patch_UpdateMatching lets that
+    // one call through. A repaint is an explicit hand-back — the caller is
+    // asking vanilla to repossess the panel — so suppressing it on the grounds
+    // that a mod still claims the panel is exactly backwards, and it deadlocks
+    // the release: the claimant flag is what we are trying to get out from
+    // under. Quick Join hits this directly, since QuickJoinInFlight is not
+    // cleared until its background task unwinds, well after ClearOverlay runs.
+    private static bool _repainting;
 
     // The inner "matching" VisualElement (the row that holds PhaseLabel),
     // or null. Used by the slot-queue's label-injection.
@@ -131,7 +121,9 @@ internal static class MatchmakingPanelOverlay
             if (Panel is not Component panel) return;
             var controller = panel.GetComponent(ControllerType);
             if (controller == null) return;
-            _updateMatching.Invoke(controller, null);
+            _repainting = true;
+            try { _updateMatching.Invoke(controller, null); }
+            finally { _repainting = false; }
         }
         catch { }
     }
@@ -206,7 +198,7 @@ internal static class MatchmakingPanelOverlay
             => AccessTools.Method(AccessTools.TypeByName("UIMatchmakingController"), "UpdateMatching");
 
         [HarmonyPrefix]
-        static bool Prefix() => !IsClaimedByMod();
+        static bool Prefix() => _repainting || !IsClaimedByMod();
     }
 
     // The X on the matchmaking panel raises one vanilla event that
