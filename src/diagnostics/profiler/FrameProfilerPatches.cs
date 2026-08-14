@@ -140,10 +140,11 @@ public static class FrameProfilerPatches
             ("GameManager.Server_Tick",                        typeof(GameManager),                "Server_Tick",                       typeof(Patch_GameManagerTick)),
             ("SteamManager.StartCallbackLoop",                 typeof(SteamManager),               "StartCallbackLoop",                 typeof(Patch_SteamCallbackLoop)),
             ("PhysicsManager.Update",                          typeof(PhysicsManager),             "Update",                            typeof(Patch_PhysicsUpdate)),
-            // B1231 renamed Server_ServerTick to Server_Tick. Resolved by string,
-            // so an older build simply logs SKIP for this row rather than failing.
+            // B1213 renamed Server_ServerTick to Server_Tick as part of replacing
+            // the whole SynchronizedObject surface. Resolved by string, so an
+            // older build simply logs SKIP for this row rather than failing.
             ("SyncObjMgr.Server_Tick",                         typeof(SynchronizedObjectManager),  "Server_Tick",                       typeof(Patch_SyncObjectTick)),
-            // B1231 removed Server_GatherSynchronizedObjectData outright — the
+            // B1213 removed Server_GatherSynchronizedObjectData outright — the
             // gather step was restructured into Server_GetTickHeader /
             // Server_TakeTickHeader / Server_SynchronizePlayer. Left pointing at
             // the old name deliberately: it SKIPs harmlessly, and picking one of
